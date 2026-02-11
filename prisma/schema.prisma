@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id                         String                 @id @default(uuid())
+  name                       String
+  createdAt                  DateTime               @default(now())
+  integrationsInstagram      IntegrationsInstagram[]
+  incomingEvents             IncomingEvent[]
+
+  @@map("organizations")
+}
+
+model IntegrationsInstagram {
+  id                   String          @id @default(uuid())
+  orgId                String
+  igAccountId          String
+  pageId               String
+  accessTokenEncrypted String
+  tokenExpiresAt       DateTime?
+  status               String
+  createdAt            DateTime        @default(now())
+  organization         Organization    @relation(fields: [orgId], references: [id])
+  incomingEvents       IncomingEvent[]
+
+  @@index([orgId])
+  @@index([igAccountId])
+  @@map("integrations_instagram")
+}
+
+model IncomingEvent {
+  id              String                 @id @default(uuid()) @db.Uuid
+  orgId           String?
+  integrationId   String?
+  source          String
+  eventType       String
+  externalEventId String
+  actorIgUserId   String?
+  postId          String?
+  threadId        String?
+  text            String?
+  raw             Json
+  receivedAt      DateTime               @default(now())
+  organization    Organization?          @relation(fields: [orgId], references: [id])
+  integration     IntegrationsInstagram? @relation(fields: [integrationId], references: [id])
+
+  @@unique([source, externalEventId])
+  @@index([orgId])
+  @@index([integrationId])
+  @@map("incoming_events")
+}
